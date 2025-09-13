@@ -9,6 +9,7 @@ urlpatterns = [
     path('reports/completed/', views.reports_completed, name='reports_completed'),
     path('reports/<int:pk>/', views.report_detail, name='report_detail'),
     path('reports/<int:pk>/professional/', views.professional_report, name='professional_report'),
+    path('reports/<int:pk>/pdf/', views.report_pdf, name='report_pdf'),
     path('api/reports/<int:pk>/status/', views.report_status_json, name='report_status_json'),
     path('api/reports/<int:pk>/update/', views.update_report, name='update_report'),
 ]

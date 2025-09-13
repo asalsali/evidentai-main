@@ -98,6 +98,11 @@
         <a href="{% url 'professional_report' report.id %}" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors">
           📄 View Professional Report
         </a>
+        {% if report.summarized_report %}
+        <a href="{% url 'report_pdf' report.id %}" class="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors">
+          📥 Download PDF
+        </a>
+        {% endif %}
         <div class="text-xs muted">Print-ready official report with all case details</div>
       </div>
     </div>

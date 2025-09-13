@@ -409,19 +409,14 @@
       ← Back to Case Details
     </a>
     {% if report.summarized_report %}
-    <button onclick="downloadReport()" class="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium flex items-center gap-2">
+    <a href="{% url 'report_pdf' report.id %}" class="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium flex items-center gap-2">
       📄 Download PDF
-    </button>
+    </a>
     {% endif %}
   </div>
 </div>
 
 <script>
-function downloadReport() {
-  // This would integrate with a PDF generation service
-  alert('PDF download functionality would be implemented here');
-}
-
 // Inline editing functionality
 document.addEventListener('DOMContentLoaded', function() {
   const editableFields = document.querySelectorAll('.editable-field');
