@@ -17,14 +17,17 @@
 </head>
 <body class="min-h-screen flex">
   <aside class="sidebar w-64 p-6 border-r border-gray-800 hidden md:block">
-    <div class="text-xl font-semibold mb-8">EvidenAI-M</div>
+    <div class="text-xl font-semibold mb-8 flex items-center gap-2">
+      <span>🚔</span>
+      <span>EvidenAI-M</span>
+    </div>
     {% include 'partials/side_menu.html' %}
   </aside>
   <div class="flex-1 flex flex-col">
     <header class="px-4 py-3 border-b border-gray-800 flex items-center justify-between">
       <div class="flex items-center gap-3">
         <button class="md:hidden px-3 py-2 border border-gray-700 rounded">Menu</button>
-        <h1 class="text-lg font-medium">{% block header %}Dashboard{% endblock %}</h1>
+        <h1 class="text-lg font-medium">{% block header %}Evidence Processing Center{% endblock %}</h1>
       </div>
     </header>
     <main class="p-6 flex-1">
@@ -39,7 +42,7 @@
     {% endif %}
     <footer class="px-6 py-4 border-t border-gray-800 text-sm muted">
       <div class="flex items-center justify-between">
-        <span>EvidenAI-M • Bodycam Evidence Reporting System</span>
+        <span>EvidenAI-M • Law Enforcement Evidence Processing System</span>
         <span>&copy; {% now "Y" %} EvidenAI</span>
       </div>
     </footer>

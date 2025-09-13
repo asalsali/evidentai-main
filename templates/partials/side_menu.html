@@ -1,10 +1,25 @@
 <nav class="space-y-2 text-sm">
-  <a href="/" class="block px-3 py-2 rounded hover:bg-gray-800">Dashboard</a>
-  <a href="/admin/" class="block px-3 py-2 rounded hover:bg-gray-800">Admin</a>
-  <div class="mt-6 text-xs uppercase muted">Reports</div>
-  <a href="{% url 'reports_all' %}" class="block px-3 py-2 rounded hover:bg-gray-800">All Reports</a>
-  <a href="{% url 'reports_in_progress' %}" class="block px-3 py-2 rounded hover:bg-gray-800">In Progress</a>
-  <a href="{% url 'reports_completed' %}" class="block px-3 py-2 rounded hover:bg-gray-800">Completed</a>
+  <a href="/" class="block px-3 py-2 rounded hover:bg-gray-800 flex items-center gap-2">
+    <span>🚔</span>
+    <span>Evidence Center</span>
+  </a>
+  <a href="/admin/" class="block px-3 py-2 rounded hover:bg-gray-800 flex items-center gap-2">
+    <span>⚙️</span>
+    <span>System Admin</span>
+  </a>
+  <div class="mt-6 text-xs uppercase muted">Case Management</div>
+  <a href="{% url 'reports_all' %}" class="block px-3 py-2 rounded hover:bg-gray-800 flex items-center gap-2">
+    <span>📊</span>
+    <span>All Cases</span>
+  </a>
+  <a href="{% url 'reports_in_progress' %}" class="block px-3 py-2 rounded hover:bg-gray-800 flex items-center gap-2">
+    <span>⏳</span>
+    <span>Processing Queue</span>
+  </a>
+  <a href="{% url 'reports_completed' %}" class="block px-3 py-2 rounded hover:bg-gray-800 flex items-center gap-2">
+    <span>✅</span>
+    <span>Completed Reports</span>
+  </a>
 </nav>
 
 

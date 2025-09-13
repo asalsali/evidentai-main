@@ -9,6 +9,24 @@ class Report(models.Model):
     original_video = models.FileField(upload_to='videos/')
     extracted_audio = models.FileField(upload_to='audio/', blank=True, null=True)
 
+    # Police-specific fields
+    incident_date = models.DateField(blank=True, null=True, help_text="Date of the incident")
+    officer_badge = models.CharField(max_length=20, blank=True, help_text="Officer badge number")
+    incident_type = models.CharField(
+        max_length=50,
+        choices=[
+            ('traffic-stop', 'Traffic Stop'),
+            ('domestic', 'Domestic Dispute'),
+            ('theft', 'Theft/Burglary'),
+            ('assault', 'Assault'),
+            ('drug', 'Drug Related'),
+            ('other', 'Other'),
+        ],
+        blank=True,
+        help_text="Type of incident"
+    )
+    notes = models.TextField(blank=True, help_text="Additional incident notes")
+
     # Processing state
     status = models.CharField(max_length=32, default='pending')
     status_message = models.TextField(blank=True, default='')
@@ -19,7 +37,7 @@ class Report(models.Model):
     summarized_report = models.TextField(blank=True, default='')
 
     def __str__(self) -> str:
-        return f"Report #{self.id} - {self.status}"
+        return f"Case #{self.id} - {self.get_incident_type_display() or 'Unknown'} - {self.status}"
 
     @property
     def progress_percent(self) -> int:

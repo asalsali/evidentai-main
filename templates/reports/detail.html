@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
-{% block title %}Report #{{ report.id }} • EvidenAI-M{% endblock %}
-{% block header %}Report #{{ report.id }}{% endblock %}
+{% block title %}Case #{{ report.id }} • EvidenAI-M{% endblock %}
+{% block header %}Case #{{ report.id }}{% endblock %}
 {% block content %}
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
   <div class="lg:col-span-2 card p-6 rounded border border-gray-800">
@@ -12,21 +12,82 @@
     {% endif %}
   </div>
   <div class="card p-6 rounded border border-gray-800">
-    <h2 class="text-lg font-semibold mb-4">Status</h2>
-    <div class="space-y-2">
-      <div><span class="muted">Status:</span> <span id="status-text">{{ report.status }}</span></div>
-      <div class="w-full bg-gray-800 rounded h-2">
-        <div id="progress-bar" class="bg-blue-600 h-2 rounded" style="width: {{ report.progress_percent }}%"></div>
+    <h2 class="text-lg font-semibold mb-4">Case Information</h2>
+    
+    <!-- Case Details -->
+    <div class="space-y-3 mb-6">
+      <div>
+        <span class="text-sm font-medium text-gray-400">Incident Type:</span>
+        <div class="mt-1">
+          {% if report.incident_type %}
+            <span class="px-2 py-1 rounded text-sm bg-gray-700">{{ report.get_incident_type_display }}</span>
+          {% else %}
+            <span class="muted">Not specified</span>
+          {% endif %}
+        </div>
       </div>
-      <div class="text-xs muted" id="status-message">{{ report.status_message }}</div>
-    </div>
-    <div class="mt-6">
-      <div class="muted text-xs mb-1">Original video</div>
-      {% if report.original_video %}
-        <a href="{{ report.original_video.url }}" class="underline" target="_blank">Download</a>
-      {% else %}
-        <span class="muted">N/A</span>
+      
+      <div>
+        <span class="text-sm font-medium text-gray-400">Officer Badge:</span>
+        <div class="mt-1">
+          {% if report.officer_badge %}
+            <span class="font-mono">#{{ report.officer_badge }}</span>
+          {% else %}
+            <span class="muted">Not specified</span>
+          {% endif %}
+        </div>
+      </div>
+      
+      <div>
+        <span class="text-sm font-medium text-gray-400">Incident Date:</span>
+        <div class="mt-1">
+          {% if report.incident_date %}
+            {{ report.incident_date|date:'F d, Y' }}
+          {% else %}
+            <span class="muted">Not specified</span>
+          {% endif %}
+        </div>
+      </div>
+      
+      {% if report.notes %}
+      <div>
+        <span class="text-sm font-medium text-gray-400">Notes:</span>
+        <div class="mt-1 text-sm">{{ report.notes }}</div>
+      </div>
       {% endif %}
+    </div>
+    
+    <!-- Processing Status -->
+    <div class="border-t border-gray-700 pt-4">
+      <h3 class="text-sm font-medium mb-3">Processing Status</h3>
+      <div class="space-y-2">
+        <div><span class="muted">Status:</span> <span id="status-text">{{ report.status|title }}</span></div>
+        <div class="w-full bg-gray-800 rounded h-2">
+          <div id="progress-bar" class="bg-blue-600 h-2 rounded" style="width: {{ report.progress_percent }}%"></div>
+        </div>
+        <div class="text-xs muted" id="status-message">{{ report.status_message }}</div>
+      </div>
+    </div>
+    
+    <!-- Evidence Files -->
+    <div class="border-t border-gray-700 pt-4 mt-4">
+      <h3 class="text-sm font-medium mb-3">Evidence Files</h3>
+      <div class="space-y-2">
+        <div>
+          <span class="muted text-xs">Original Video:</span>
+          {% if report.original_video %}
+            <a href="{{ report.original_video.url }}" class="underline text-blue-300" target="_blank">Download</a>
+          {% else %}
+            <span class="muted">N/A</span>
+          {% endif %}
+        </div>
+        {% if report.extracted_audio %}
+        <div>
+          <span class="muted text-xs">Audio File:</span>
+          <a href="{{ report.extracted_audio.url }}" class="underline text-blue-300" target="_blank">Download</a>
+        </div>
+        {% endif %}
+      </div>
     </div>
   </div>
 </div>
