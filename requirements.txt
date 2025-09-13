@@ -1,0 +1,6 @@
+openai
+openai-agents
+Django
+python-dotenv
+opencv-python
+moviepy

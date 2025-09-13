@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard • EvidenAI-M{% endblock %}
+{% block header %}Bodycam Evidence Dashboard{% endblock %}
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-2 card p-6 rounded border border-gray-800">
+    <h2 class="text-lg font-semibold mb-4">Upload Bodycam Video</h2>
+    <form action="{% url 'upload_video' %}" method="post" enctype="multipart/form-data" class="space-y-4">
+      {% csrf_token %}
+      <div>
+        <input type="file" name="original_video" accept="video/*" class="w-full text-gray-200" required />
+      </div>
+      <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded">Start Processing</button>
+    </form>
+  </div>
+
+  <div class="card p-6 rounded border border-gray-800">
+    <h2 class="text-lg font-semibold mb-4">Recent Reports</h2>
+    <ul class="space-y-3" id="recent-reports">
+      {% for r in reports %}
+      <li class="flex items-center justify-between">
+        <div>
+          <div class="font-medium"><a href="{% url 'report_detail' r.id %}" class="underline">Report #{{ r.id }}</a></div>
+          <div class="text-xs muted">{{ r.created_at|date:'Y-m-d H:i' }}</div>
+        </div>
+        <div class="text-right">
+          <span class="text-sm px-2 py-1 rounded border border-gray-700" data-report-status="{{ r.id }}">{{ r.status }}</span>
+          <div class="w-32 bg-gray-800 rounded h-1 mt-1">
+            <div class="bg-blue-600 h-1 rounded" style="width: {{ r.progress_percent }}%" data-report-progress="{{ r.id }}"></div>
+          </div>
+        </div>
+      </li>
+      {% empty %}
+      <li class="muted">No reports yet.</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+<script>
+(function(){
+  const rows = document.querySelectorAll('[data-report-status]');
+  function pollOne(id){
+    fetch(`/api/reports/${id}/status/`).then(r=>r.json()).then(d=>{
+      const statusEl = document.querySelector(`[data-report-status="${id}"]`);
+      const progEl = document.querySelector(`[data-report-progress="${id}"]`);
+      if(statusEl){ statusEl.textContent = d.status; }
+      if(progEl){ progEl.style.width = (d.progress||0)+"%"; }
+      if(d.status !== 'completed' && d.status !== 'failed'){
+        setTimeout(()=>pollOne(id), 3000);
+      }
+    }).catch(()=>setTimeout(()=>pollOne(id), 4000));
+  }
+  rows.forEach(el=>{
+    const id = el.getAttribute('data-report-status');
+    if(el.textContent !== 'completed' && el.textContent !== 'failed'){
+      setTimeout(()=>pollOne(id), 2000);
+    }
+  });
+})();
+</script>
+{% endblock %}
+
+

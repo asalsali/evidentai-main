@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }} • EvidenAI-M{% endblock %}
+{% block header %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card p-6 rounded border border-gray-800">
+  <div class="overflow-x-auto">
+    <table class="min-w-full text-left text-sm">
+      <thead class="border-b border-gray-800 text-gray-400">
+        <tr>
+          <th class="py-2 pr-4">ID</th>
+          <th class="py-2 pr-4">Created</th>
+          <th class="py-2 pr-4">Status</th>
+          <th class="py-2 pr-4">Transcript</th>
+          <th class="py-2 pr-4">Summary</th>
+        </tr>
+      </thead>
+      <tbody id="reports-tbody">
+      {% for r in reports %}
+        <tr class="border-b border-gray-800">
+          <td class="py-2 pr-4"><a href="{% url 'report_detail' r.id %}" class="underline">#{{ r.id }}</a></td>
+          <td class="py-2 pr-4">{{ r.created_at|date:'Y-m-d H:i' }}</td>
+          <td class="py-2 pr-4">
+            <span class="px-2 py-1 rounded border border-gray-700" data-report-status="{{ r.id }}">{{ r.status }}</span>
+            <div class="w-40 bg-gray-800 rounded h-1 mt-1">
+              <div class="bg-blue-600 h-1 rounded" style="width: {{ r.progress_percent }}%" data-report-progress="{{ r.id }}"></div>
+            </div>
+          </td>
+          <td class="py-2 pr-4">{% if r.transcript_text %}Yes{% else %}<span class="muted">No</span>{% endif %}</td>
+          <td class="py-2 pr-4">{% if r.summarized_report %}Yes{% else %}<span class="muted">No</span>{% endif %}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5" class="py-4 muted">No reports.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+<script>
+(function(){
+  const rows = document.querySelectorAll('[data-report-status]');
+  function pollOne(id){
+    fetch(`/api/reports/${id}/status/`).then(r=>r.json()).then(d=>{
+      const statusEl = document.querySelector(`[data-report-status="${id}"]`);
+      const progEl = document.querySelector(`[data-report-progress="${id}"]`);
+      if(statusEl){ statusEl.textContent = d.status; }
+      if(progEl){ progEl.style.width = (d.progress||0)+"%"; }
+      if(d.status !== 'completed' && d.status !== 'failed'){
+        setTimeout(()=>pollOne(id), 3000);
+      }
+    }).catch(()=>setTimeout(()=>pollOne(id), 4000));
+  }
+  rows.forEach(el=>{
+    const id = el.getAttribute('data-report-status');
+    if(el.textContent !== 'completed' && el.textContent !== 'failed'){
+      setTimeout(()=>pollOne(id), 2000);
+    }
+  });
+})();
+</script>
+{% endblock %}
+
+

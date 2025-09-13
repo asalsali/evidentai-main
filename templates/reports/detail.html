@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% block title %}Report #{{ report.id }} • EvidenAI-M{% endblock %}
+{% block header %}Report #{{ report.id }}{% endblock %}
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-2 card p-6 rounded border border-gray-800">
+    <h2 class="text-lg font-semibold mb-4">Summary</h2>
+    {% if report.summarized_report %}
+      <pre class="whitespace-pre-wrap text-sm leading-6">{{ report.summarized_report }}</pre>
+    {% else %}
+      <div class="muted">No summary yet.</div>
+    {% endif %}
+  </div>
+  <div class="card p-6 rounded border border-gray-800">
+    <h2 class="text-lg font-semibold mb-4">Status</h2>
+    <div class="space-y-2">
+      <div><span class="muted">Status:</span> <span id="status-text">{{ report.status }}</span></div>
+      <div class="w-full bg-gray-800 rounded h-2">
+        <div id="progress-bar" class="bg-blue-600 h-2 rounded" style="width: {{ report.progress_percent }}%"></div>
+      </div>
+      <div class="text-xs muted" id="status-message">{{ report.status_message }}</div>
+    </div>
+    <div class="mt-6">
+      <div class="muted text-xs mb-1">Original video</div>
+      {% if report.original_video %}
+        <a href="{{ report.original_video.url }}" class="underline" target="_blank">Download</a>
+      {% else %}
+        <span class="muted">N/A</span>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script>
+  (function() {
+    const statusUrl = "{% url 'report_status_json' report.id %}";
+    const statusText = document.getElementById('status-text');
+    const statusMessage = document.getElementById('status-message');
+    const progressBar = document.getElementById('progress-bar');
+    function poll() {
+      fetch(statusUrl).then(r => r.json()).then(d => {
+        statusText.textContent = d.status;
+        statusMessage.textContent = d.status_message || '';
+        progressBar.style.width = (d.progress || 0) + '%';
+        if (d.status !== 'completed' && d.status !== 'failed') {
+          setTimeout(poll, 2500);
+        }
+      }).catch(() => setTimeout(poll, 3000));
+    }
+    if (statusText && (statusText.textContent !== 'completed' && statusText.textContent !== 'failed')) {
+      setTimeout(poll, 2000);
+    }
+  })();
+ </script>
+{% endblock %}
+
+
