@@ -1,0 +1,547 @@
+{% extends 'base.html' %}
+{% block title %}Professional Report - Case #{{ report.id }} • EvidenAI-M{% endblock %}
+{% block header %}Professional Evidence Report{% endblock %}
+
+{% block head %}
+<style>
+  @media print {
+    body { background: white !important; color: black !important; }
+    .no-print { display: none !important; }
+    .print-break { page-break-before: always; }
+    .card { border: 1px solid #000 !important; background: white !important; }
+  }
+  
+  .report-header {
+    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+    color: white;
+    padding: 2rem;
+    margin: -1.5rem -1.5rem 2rem -1.5rem;
+    border-radius: 0.5rem 0.5rem 0 0;
+  }
+  
+  .report-section {
+    background: #f8fafc;
+    border-left: 4px solid #3b82f6;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+    border-radius: 0 0.5rem 0.5rem 0;
+  }
+  
+  .field-label {
+    font-weight: 600;
+    color: #374151;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  
+  .field-value {
+    font-size: 1rem;
+    color: #111827;
+    margin-bottom: 1rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  
+  .incident-type-badge {
+    background: #dbeafe;
+    color: #1e40af;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-weight: 600;
+    font-size: 0.875rem;
+  }
+  
+  .status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-weight: 600;
+    font-size: 0.875rem;
+  }
+  
+  .status-completed { background: #dcfce7; color: #166534; }
+  .status-processing { background: #fef3c7; color: #92400e; }
+  .status-failed { background: #fee2e2; color: #991b1b; }
+  
+  .evidence-section {
+    background: #fefce8;
+    border: 1px solid #facc15;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    margin: 1rem 0;
+  }
+  
+  .ai-analysis {
+    background: #f0f9ff;
+    border: 1px solid #0ea5e9;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    margin: 1rem 0;
+  }
+  
+  .signature-line {
+    border-bottom: 1px solid #000;
+    width: 300px;
+    margin: 2rem 0 0.5rem 0;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+<div class="max-w-4xl mx-auto">
+  <!-- Report Header -->
+  <div class="report-header">
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-3xl font-bold mb-2">EVIDENCE PROCESSING REPORT</h1>
+        <p class="text-blue-100">Automated AI Analysis & Documentation</p>
+      </div>
+      <div class="text-right">
+        <div class="text-2xl font-bold">Case #{{ report.id }}</div>
+        <div class="text-blue-100">Generated: {{ report.created_at|date:'F d, Y - g:i A' }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Case Information Section -->
+  <div class="report-section">
+    <h2 class="text-xl font-bold mb-4 text-gray-800">📋 CASE INFORMATION</h2>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div>
+        <div class="field-label">Incident Type</div>
+        <div class="field-value">
+          <div class="editable-field" data-field="incident_type" data-type="select">
+            {% if report.incident_type %}
+              <span class="incident-type-badge display-value">{{ report.get_incident_type_display }}</span>
+            {% else %}
+              <span class="text-gray-500 italic display-value">Not specified</span>
+            {% endif %}
+            <select class="edit-input hidden w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-gray-200">
+              <option value="">Select incident type...</option>
+              <option value="traffic-stop" {% if report.incident_type == 'traffic-stop' %}selected{% endif %}>Traffic Stop</option>
+              <option value="domestic" {% if report.incident_type == 'domestic' %}selected{% endif %}>Domestic Dispute</option>
+              <option value="theft" {% if report.incident_type == 'theft' %}selected{% endif %}>Theft/Burglary</option>
+              <option value="assault" {% if report.incident_type == 'assault' %}selected{% endif %}>Assault</option>
+              <option value="drug" {% if report.incident_type == 'drug' %}selected{% endif %}>Drug Related</option>
+              <option value="other" {% if report.incident_type == 'other' %}selected{% endif %}>Other</option>
+            </select>
+            <button class="edit-btn ml-2 text-blue-600 hover:text-blue-800 text-sm">✏️ Edit</button>
+            <button class="save-btn ml-2 text-green-600 hover:text-green-800 text-sm hidden">💾 Save</button>
+            <button class="cancel-btn ml-2 text-gray-600 hover:text-gray-800 text-sm hidden">❌ Cancel</button>
+          </div>
+        </div>
+      </div>
+      
+      <div>
+        <div class="field-label">Officer Badge Number</div>
+        <div class="field-value">
+          <div class="editable-field" data-field="officer_badge" data-type="text">
+            {% if report.officer_badge %}
+              <span class="font-mono text-lg font-semibold display-value">#{{ report.officer_badge }}</span>
+            {% else %}
+              <span class="text-gray-500 italic display-value">Not specified</span>
+            {% endif %}
+            <input type="text" class="edit-input hidden w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-gray-200" value="{{ report.officer_badge }}" placeholder="Enter badge number">
+            <button class="edit-btn ml-2 text-blue-600 hover:text-blue-800 text-sm">✏️ Edit</button>
+            <button class="save-btn ml-2 text-green-600 hover:text-green-800 text-sm hidden">💾 Save</button>
+            <button class="cancel-btn ml-2 text-gray-600 hover:text-gray-800 text-sm hidden">❌ Cancel</button>
+          </div>
+        </div>
+      </div>
+      
+      <div>
+        <div class="field-label">Incident Date</div>
+        <div class="field-value">
+          <div class="editable-field" data-field="incident_date" data-type="date">
+            {% if report.incident_date %}
+              <span class="display-value">{{ report.incident_date|date:'F d, Y' }}</span>
+            {% else %}
+              <span class="text-gray-500 italic display-value">Not specified</span>
+            {% endif %}
+            <input type="date" class="edit-input hidden w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-gray-200" value="{{ report.incident_date|date:'Y-m-d' }}">
+            <button class="edit-btn ml-2 text-blue-600 hover:text-blue-800 text-sm">✏️ Edit</button>
+            <button class="save-btn ml-2 text-green-600 hover:text-green-800 text-sm hidden">💾 Save</button>
+            <button class="cancel-btn ml-2 text-gray-600 hover:text-gray-800 text-sm hidden">❌ Cancel</button>
+          </div>
+        </div>
+      </div>
+      
+      <div>
+        <div class="field-label">Report Status</div>
+        <div class="field-value">
+          <span class="status-badge status-{{ report.status }}">
+            {% if report.status == 'completed' %}✓ COMPLETED
+            {% elif report.status == 'failed' %}✗ FAILED
+            {% else %}⏳ {{ report.status|upper }}
+            {% endif %}
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="mt-4">
+      <div class="field-label">Additional Notes</div>
+      <div class="field-value">
+        <div class="editable-field" data-field="notes" data-type="textarea">
+          {% if report.notes %}
+            <div class="display-value whitespace-pre-wrap">{{ report.notes }}</div>
+          {% else %}
+            <div class="text-gray-500 italic display-value">No additional notes</div>
+          {% endif %}
+          <textarea class="edit-input hidden w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-gray-200 h-24" placeholder="Enter additional notes...">{{ report.notes }}</textarea>
+          <div class="mt-2">
+            <button class="edit-btn text-blue-600 hover:text-blue-800 text-sm">✏️ Edit</button>
+            <button class="save-btn text-green-600 hover:text-green-800 text-sm hidden">💾 Save</button>
+            <button class="cancel-btn text-gray-600 hover:text-gray-800 text-sm hidden">❌ Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Evidence Files Section -->
+  <div class="evidence-section">
+    <h2 class="text-xl font-bold mb-4 text-gray-800">📁 EVIDENCE FILES</h2>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <div class="field-label">Original Bodycam Video</div>
+        <div class="field-value">
+          {% if report.original_video %}
+            <a href="{{ report.original_video.url }}" class="text-blue-600 hover:underline font-medium" target="_blank">
+              📹 Download Video File
+            </a>
+            <div class="text-sm text-gray-600 mt-1">File uploaded: {{ report.created_at|date:'M d, Y g:i A' }}</div>
+          {% else %}
+            <span class="text-gray-500 italic">No video file available</span>
+          {% endif %}
+        </div>
+      </div>
+      
+      <div>
+        <div class="field-label">Extracted Audio</div>
+        <div class="field-value">
+          {% if report.extracted_audio %}
+            <a href="{{ report.extracted_audio.url }}" class="text-blue-600 hover:underline font-medium" target="_blank">
+              🎵 Download Audio File
+            </a>
+          {% else %}
+            <span class="text-gray-500 italic">Audio extraction pending</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Analysis Results -->
+  {% if report.transcript_text or report.image_findings_json or report.summarized_report %}
+  <div class="ai-analysis">
+    <h2 class="text-xl font-bold mb-4 text-gray-800">🤖 AI ANALYSIS RESULTS</h2>
+    
+    <!-- Transcript Section -->
+    {% if report.transcript_text %}
+    <div class="mb-6">
+      <h3 class="text-lg font-semibold mb-3 text-gray-700">📝 Audio Transcript</h3>
+      <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-3">
+        <div class="flex items-center">
+          <div class="text-yellow-600 mr-2">⚠️</div>
+          <div class="text-sm font-medium text-yellow-800">OFFICER REVIEW REQUIRED</div>
+        </div>
+        <p class="text-sm text-yellow-700 mt-1">Please review the transcript for accuracy and completeness. AI transcription may contain errors.</p>
+      </div>
+      <div class="bg-white p-6 rounded border border-gray-200 shadow-sm">
+        <div class="prose prose-sm max-w-none">
+          <div class="text-gray-800 leading-relaxed whitespace-pre-wrap font-mono text-sm">{{ report.transcript_text }}</div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+    
+    
+    <!-- Summary Report Section -->
+    {% if report.summarized_report %}
+    <div class="mb-6">
+      <h3 class="text-lg font-semibold mb-3 text-gray-700">📊 Comprehensive Summary</h3>
+      <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-3">
+        <div class="flex items-center">
+          <div class="text-blue-600 mr-2">📋</div>
+          <div class="text-sm font-medium text-blue-800">OFFICER REVIEW REQUIRED</div>
+        </div>
+        <p class="text-sm text-blue-700 mt-1">Please verify the AI-generated summary for accuracy and add any additional observations or corrections.</p>
+      </div>
+      <div class="bg-white p-6 rounded border border-gray-200 shadow-sm">
+        <div class="prose prose-sm max-w-none">
+          <div class="text-gray-800 leading-relaxed whitespace-pre-wrap text-sm">{{ report.summarized_report }}</div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- Processing Timeline -->
+  <div class="report-section">
+    <h2 class="text-xl font-bold mb-4 text-gray-800">⏱️ PROCESSING TIMELINE</h2>
+    
+    <div class="space-y-3">
+      <div class="flex items-center gap-3">
+        <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+        <span class="text-sm">Report created: {{ report.created_at|date:'M d, Y g:i A' }}</span>
+      </div>
+      
+      {% if report.updated_at != report.created_at %}
+      <div class="flex items-center gap-3">
+        <div class="w-3 h-3 bg-blue-500 rounded-full"></div>
+        <span class="text-sm">Last updated: {{ report.updated_at|date:'M d, Y g:i A' }}</span>
+      </div>
+      {% endif %}
+      
+      {% if report.status == 'completed' %}
+      <div class="flex items-center gap-3">
+        <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+        <span class="text-sm font-medium text-green-700">✓ Analysis completed successfully</span>
+      </div>
+      {% elif report.status == 'failed' %}
+      <div class="flex items-center gap-3">
+        <div class="w-3 h-3 bg-red-500 rounded-full"></div>
+        <span class="text-sm font-medium text-red-700">✗ Processing failed: {{ report.status_message }}</span>
+      </div>
+      {% else %}
+      <div class="flex items-center gap-3">
+        <div class="w-3 h-3 bg-yellow-500 rounded-full animate-pulse"></div>
+        <span class="text-sm font-medium text-yellow-700">⏳ Currently processing...</span>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Officer Review Section -->
+  <div class="report-section">
+    <h2 class="text-xl font-bold mb-4 text-gray-800">👮 OFFICER REVIEW & VERIFICATION</h2>
+    
+    <div class="bg-red-50 border-l-4 border-red-400 p-4 mb-4">
+      <div class="flex items-center">
+        <div class="text-red-600 mr-2">🚨</div>
+        <div class="text-sm font-medium text-red-800">MANDATORY OFFICER REVIEW</div>
+      </div>
+      <p class="text-sm text-red-700 mt-1">This report requires officer verification before use in official proceedings.</p>
+    </div>
+    
+    <div class="space-y-4">
+      <div class="flex items-start space-x-3">
+        <input type="checkbox" class="mt-1 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+        <div>
+          <label class="text-sm font-medium text-gray-700">Audio Transcript Verified</label>
+          <p class="text-xs text-gray-500">I have reviewed the audio transcript for accuracy and completeness</p>
+        </div>
+      </div>
+      
+      <div class="flex items-start space-x-3">
+        <input type="checkbox" class="mt-1 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+        <div>
+          <label class="text-sm font-medium text-gray-700">Summary Report Verified</label>
+          <p class="text-xs text-gray-500">I have verified the AI-generated summary and added any necessary corrections</p>
+        </div>
+      </div>
+      
+      <div class="flex items-start space-x-3">
+        <input type="checkbox" class="mt-1 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+        <div>
+          <label class="text-sm font-medium text-gray-700">Evidence Chain of Custody Verified</label>
+          <p class="text-xs text-gray-500">I have confirmed the evidence files are complete and unaltered</p>
+        </div>
+      </div>
+      
+      <div class="flex items-start space-x-3">
+        <input type="checkbox" class="mt-1 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+        <div>
+          <label class="text-sm font-medium text-gray-700">Case Information Accurate</label>
+          <p class="text-xs text-gray-500">I have verified all case details including incident type, date, and officer information</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="mt-6 p-4 bg-gray-50 rounded border">
+      <label class="block text-sm font-medium text-gray-700 mb-2">Additional Officer Notes/Corrections:</label>
+      <textarea class="w-full h-24 px-3 py-2 border border-gray-300 rounded-md text-sm" placeholder="Enter any additional observations, corrections, or notes here..."></textarea>
+    </div>
+  </div>
+
+  <!-- Signature Section -->
+  <div class="report-section">
+    <h2 class="text-xl font-bold mb-4 text-gray-800">✍️ CERTIFICATION</h2>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div>
+        <div class="field-label">Prepared By</div>
+        <div class="signature-line"></div>
+        <div class="text-sm text-gray-600 mt-1">EvidenAI-M Automated System</div>
+      </div>
+      
+      <div>
+        <div class="field-label">Date</div>
+        <div class="signature-line"></div>
+        <div class="text-sm text-gray-600 mt-1">{{ report.created_at|date:'F d, Y' }}</div>
+      </div>
+    </div>
+    
+    <div class="mt-6 p-4 bg-red-50 border-l-4 border-red-400 rounded">
+      <div class="flex items-start">
+        <div class="text-red-600 mr-3 mt-0.5">⚠️</div>
+        <div>
+          <h4 class="text-sm font-semibold text-red-800 mb-2">IMPORTANT DISCLAIMER</h4>
+          <p class="text-sm text-red-700 leading-relaxed">
+            This report was generated using artificial intelligence and <strong>MUST</strong> be reviewed and verified by qualified law enforcement personnel before use in official proceedings. The accuracy of AI-generated content may vary and should be verified against original evidence. This report is a preliminary analysis tool and does not replace professional law enforcement investigation and documentation.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Action Buttons -->
+  <div class="no-print flex gap-4 mt-8 mb-8">
+    <button onclick="window.print()" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium flex items-center gap-2">
+      🖨️ Print Report
+    </button>
+    <a href="{% url 'report_detail' report.id %}" class="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium flex items-center gap-2">
+      ← Back to Case Details
+    </a>
+    {% if report.summarized_report %}
+    <button onclick="downloadReport()" class="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium flex items-center gap-2">
+      📄 Download PDF
+    </button>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+function downloadReport() {
+  // This would integrate with a PDF generation service
+  alert('PDF download functionality would be implemented here');
+}
+
+// Inline editing functionality
+document.addEventListener('DOMContentLoaded', function() {
+  const editableFields = document.querySelectorAll('.editable-field');
+  
+  editableFields.forEach(field => {
+    const editBtn = field.querySelector('.edit-btn');
+    const saveBtn = field.querySelector('.save-btn');
+    const cancelBtn = field.querySelector('.cancel-btn');
+    const displayValue = field.querySelector('.display-value');
+    const editInput = field.querySelector('.edit-input');
+    const fieldName = field.dataset.field;
+    const fieldType = field.dataset.type;
+    
+    let originalValue = '';
+    
+    editBtn.addEventListener('click', function() {
+      originalValue = editInput.value;
+      displayValue.classList.add('hidden');
+      editInput.classList.remove('hidden');
+      editBtn.classList.add('hidden');
+      saveBtn.classList.remove('hidden');
+      cancelBtn.classList.remove('hidden');
+      editInput.focus();
+    });
+    
+    cancelBtn.addEventListener('click', function() {
+      editInput.value = originalValue;
+      displayValue.classList.remove('hidden');
+      editInput.classList.add('hidden');
+      editBtn.classList.remove('hidden');
+      saveBtn.classList.add('hidden');
+      cancelBtn.classList.add('hidden');
+    });
+    
+    saveBtn.addEventListener('click', function() {
+      const newValue = editInput.value.trim();
+      
+      // Show loading state
+      saveBtn.textContent = '⏳ Saving...';
+      saveBtn.disabled = true;
+      
+      // Send AJAX request
+      fetch(`/api/reports/{{ report.id }}/update/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: `field=${fieldName}&value=${encodeURIComponent(newValue)}`
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          // Update display value
+          if (fieldType === 'select') {
+            const selectedOption = editInput.querySelector(`option[value="${newValue}"]`);
+            displayValue.textContent = selectedOption ? selectedOption.textContent : 'Not specified';
+            displayValue.className = newValue ? 'incident-type-badge display-value' : 'text-gray-500 italic display-value';
+          } else if (fieldType === 'text' && fieldName === 'officer_badge') {
+            displayValue.textContent = newValue ? `#${newValue}` : 'Not specified';
+            displayValue.className = newValue ? 'font-mono text-lg font-semibold display-value' : 'text-gray-500 italic display-value';
+          } else if (fieldType === 'date') {
+            if (newValue) {
+              const date = new Date(newValue);
+              displayValue.textContent = date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+            } else {
+              displayValue.textContent = 'Not specified';
+            }
+            displayValue.className = newValue ? 'display-value' : 'text-gray-500 italic display-value';
+          } else if (fieldType === 'textarea') {
+            displayValue.textContent = newValue || 'No additional notes';
+            displayValue.className = newValue ? 'display-value whitespace-pre-wrap' : 'text-gray-500 italic display-value';
+          }
+          
+          // Hide edit mode
+          displayValue.classList.remove('hidden');
+          editInput.classList.add('hidden');
+          editBtn.classList.remove('hidden');
+          saveBtn.classList.add('hidden');
+          cancelBtn.classList.add('hidden');
+          
+          // Show success message
+          showNotification('✅ Field updated successfully!', 'success');
+        } else {
+          showNotification('❌ Error updating field: ' + data.error, 'error');
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        showNotification('❌ Error updating field', 'error');
+      })
+      .finally(() => {
+        saveBtn.textContent = '💾 Save';
+        saveBtn.disabled = false;
+      });
+    });
+    
+    // Handle Enter key for text inputs
+    if (fieldType === 'text' || fieldType === 'textarea') {
+      editInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && fieldType === 'text') {
+          e.preventDefault();
+          saveBtn.click();
+        }
+      });
+    }
+  });
+});
+
+function showNotification(message, type) {
+  const notification = document.createElement('div');
+  notification.className = `fixed top-4 right-4 px-4 py-2 rounded-lg text-white z-50 ${
+    type === 'success' ? 'bg-green-600' : 'bg-red-600'
+  }`;
+  notification.textContent = message;
+  document.body.appendChild(notification);
+  
+  setTimeout(() => {
+    notification.remove();
+  }, 3000);
+}
+</script>
+{% endblock %}

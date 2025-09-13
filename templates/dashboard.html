@@ -84,7 +84,12 @@
             <div class="text-xs muted">{{ r.created_at|date:'M d, Y - g:i A' }}</div>
             <div class="text-xs text-gray-400 mt-1">
               {% if r.status == 'completed' %}
-                <span class="text-green-400">✓ Report Ready</span>
+                <div class="space-y-1">
+                  <span class="text-green-400">✓ Report Ready</span>
+                  <div>
+                    <a href="{% url 'professional_report' r.id %}" class="text-blue-400 hover:underline">📄 Professional Report</a>
+                  </div>
+                </div>
               {% elif r.status == 'failed' %}
                 <span class="text-red-400">✗ Processing Failed</span>
               {% else %}

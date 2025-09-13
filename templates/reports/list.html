@@ -48,7 +48,12 @@
           </td>
           <td class="py-2 pr-4">
             {% if r.summarized_report %}
-              <span class="text-green-400">✓ Ready</span>
+              <div class="space-y-1">
+                <span class="text-green-400">✓ Ready</span>
+                <div>
+                  <a href="{% url 'professional_report' r.id %}" class="text-xs text-blue-400 hover:underline">📄 Professional Report</a>
+                </div>
+              </div>
             {% elif r.transcript_text %}
               <span class="text-yellow-400">⏳ Processing</span>
             {% else %}

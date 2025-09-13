@@ -73,4 +73,48 @@ def report_status_json(request, pk: int):
         "status_message": report.status_message,
     })
 
+
+def professional_report(request, pk: int):
+    """Display a professional, print-ready report for law enforcement use."""
+    try:
+        report = Report.objects.get(pk=pk)
+    except Report.DoesNotExist as e:
+        raise Http404 from e
+    
+    context = {
+        'report': report,
+    }
+    return render(request, 'reports/professional_report.html', context)
+
+
+def update_report(request, pk: int):
+    """Update report information via AJAX."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    
+    try:
+        report = Report.objects.get(pk=pk)
+    except Report.DoesNotExist:
+        return JsonResponse({'error': 'Report not found'}, status=404)
+    
+    # Get the field to update and new value
+    field = request.POST.get('field')
+    value = request.POST.get('value', '').strip()
+    
+    # Validate field name
+    allowed_fields = ['incident_date', 'officer_badge', 'incident_type', 'notes']
+    if field not in allowed_fields:
+        return JsonResponse({'error': 'Invalid field'}, status=400)
+    
+    # Update the field
+    setattr(report, field, value)
+    report.save()
+    
+    return JsonResponse({
+        'success': True,
+        'field': field,
+        'value': value,
+        'display_value': getattr(report, f'get_{field}_display', lambda: value)() if hasattr(report, f'get_{field}_display') else value
+    })
+
 # Create your views here.
