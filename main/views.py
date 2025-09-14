@@ -380,7 +380,7 @@ def report_pdf(request, pk: int):
     story.append(Paragraph("CERTIFICATION", heading_style))
     
     cert_data = [
-        ['Prepared By:', 'EvidenAI-M Automated System'],
+        ['Prepared By:', 'EvidentAI Automated System'],
         ['Date:', report.created_at.strftime('%B %d, %Y')]
     ]
     

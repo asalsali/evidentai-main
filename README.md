@@ -1,4 +1,4 @@
-# 🚔 Evident AI
+# 🚔 EvidentAI
 
 **Automatically transforms bodycam footage into professional evidence reports using AI.**
 
