@@ -1,12 +1,13 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils import timezone
 from cryptography.fernet import Fernet
 import hashlib
 import json
 
 
 class OfficerWallet(models.Model):
-    """Simple XRPL wallet tied to each officer"""
+    """XRPL wallet with XLS-70 credentials for law enforcement officers"""
     user = models.OneToOneField(
         User, 
         on_delete=models.CASCADE, 
@@ -16,6 +17,12 @@ class OfficerWallet(models.Model):
     # Wallet identification
     wallet_address = models.CharField(max_length=50, unique=True)
     encrypted_secret = models.TextField()  # Encrypted private key
+    
+    # XLS-70 Credential fields
+    credential_id = models.CharField(max_length=100, blank=True, help_text="XLS-70 Credential ID")
+    credential_data = models.JSONField(blank=True, null=True, help_text="Credential data from XRPL")
+    credential_created_at = models.DateTimeField(null=True, blank=True, help_text="When credential was created")
+    credential_accepted_at = models.DateTimeField(null=True, blank=True, help_text="When credential was accepted")
     
     # Status tracking
     is_active = models.BooleanField(default=True)
@@ -30,6 +37,36 @@ class OfficerWallet(models.Model):
         from django.conf import settings
         fernet = Fernet(settings.XRPL_ENCRYPTION_KEY)
         return fernet.decrypt(self.encrypted_secret.encode()).decode()
+    
+    @property
+    def has_valid_credential(self):
+        """Check if the officer has a valid XLS-70 credential"""
+        if not self.credential_id or not self.credential_data:
+            return False
+        
+        # Check if credential is expired
+        expires_at = self.credential_data.get('expires_at')
+        if expires_at:
+            from datetime import datetime
+            try:
+                expiry_date = datetime.fromisoformat(expires_at.replace('Z', '+00:00'))
+                return timezone.now() < expiry_date
+            except:
+                return False
+        
+        return True
+    
+    @property
+    def credential_status(self):
+        """Get human-readable credential status"""
+        if not self.credential_id:
+            return "No Credential"
+        elif not self.credential_accepted_at:
+            return "Pending Acceptance"
+        elif self.has_valid_credential:
+            return "Valid"
+        else:
+            return "Expired"
 
 
 class Report(models.Model):
@@ -79,6 +116,17 @@ class Report(models.Model):
     )
     signed_at = models.DateTimeField(null=True, blank=True, help_text="When the document was digitally signed")
     signature_tx_hash = models.CharField(max_length=64, blank=True, help_text="XRPL transaction hash of the signature")
+    signature_type = models.CharField(
+        max_length=20,
+        choices=[
+            ('MOCK', 'Mock Signature (Testing)'),
+            ('XLS70_CREDENTIAL', 'XLS-70 Credential Signature'),
+            ('LEGACY', 'Legacy Transaction Memo'),
+        ],
+        default='MOCK',
+        help_text="Type of digital signature used"
+    )
+    credential_id = models.CharField(max_length=100, blank=True, help_text="XLS-70 Credential ID used for signing")
 
     def __str__(self) -> str:
         return f"Case #{self.id} - {self.get_incident_type_display() or 'Unknown'} - {self.status}"

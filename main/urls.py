@@ -26,6 +26,13 @@ urlpatterns = [
     path('reports/<int:pk>/sign/', views.sign_report, name='sign_report'),
     path('reports/<int:pk>/verify/', views.verify_signature, name='verify_signature'),
     path('api/reports/<int:pk>/signature-status/', views.signature_status_api, name='signature_status_api'),
+    
+    # XLS-70 Credential URLs
+    path('create-credential/', views.create_credential, name='create_credential'),
+    path('accept-credential/', views.accept_credential, name='accept_credential'),
+    path('reports/<int:pk>/sign-xls70/', views.sign_report_xls70, name='sign_report_xls70'),
+    path('reports/<int:pk>/verify-credential/', views.verify_credential_signature, name='verify_credential_signature'),
+    path('api/credential-status/', views.credential_status_api, name='credential_status_api'),
 ]
 
 

@@ -9,6 +9,7 @@ from django.contrib import messages
 from .forms import VideoUploadForm
 from .models import Report, OfficerWallet
 from .xrpl_service import xrpl_service
+from .xls70_credential_service import xls70_service
 import threading
 from reportlab.lib.pagesizes import letter, A4
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
@@ -558,6 +559,116 @@ def signature_status_api(request, pk):
         return JsonResponse({
             'error': str(e)
         }, status=500)
+
+
+# XLS-70 Credential Management Views
+
+@login_required
+def create_credential(request):
+    """Create XLS-70 credential for law enforcement officer"""
+    if request.method == 'POST':
+        officer_info = {
+            'badge_number': request.POST.get('badge_number', ''),
+            'department': request.POST.get('department', ''),
+            'rank': request.POST.get('rank', ''),
+            'jurisdiction': request.POST.get('jurisdiction', ''),
+            'certification_level': request.POST.get('certification_level', ''),
+            'expiry_date': request.POST.get('expiry_date', ''),
+        }
+        
+        result = xls70_service.create_officer_credential(request.user, officer_info)
+        
+        if result.get('success'):
+            messages.success(request, f"Credential created successfully! ID: {result['credential_id']}")
+            return redirect('wallet_dashboard')
+        else:
+            messages.error(request, f"Failed to create credential: {result.get('error')}")
+    
+    return render(request, 'wallet/create_credential.html')
+
+@login_required
+def accept_credential(request):
+    """Accept a pending XLS-70 credential"""
+    if request.method == 'POST':
+        credential_id = request.POST.get('credential_id')
+        if credential_id:
+            result = xls70_service.accept_credential(request.user, credential_id)
+            
+            if result.get('success'):
+                messages.success(request, "Credential accepted successfully!")
+            else:
+                messages.error(request, f"Failed to accept credential: {result.get('error')}")
+    
+    return redirect('wallet_dashboard')
+
+@login_required
+def sign_report_xls70(request, pk):
+    """Sign a report using XLS-70 credentials"""
+    report = get_object_or_404(Report, pk=pk)
+    
+    # Check if already signed
+    if report.signed_by:
+        messages.warning(request, "This report is already signed.")
+        return redirect('report_detail', pk=pk)
+    
+    # Check if user has wallet and credential
+    if not hasattr(request.user, 'officer_wallet'):
+        messages.error(request, "You need to set up an XRPL wallet first.")
+        return redirect('setup_wallet')
+    
+    if not request.user.officer_wallet.has_valid_credential:
+        messages.error(request, "You need a valid XLS-70 credential to sign reports.")
+        return redirect('create_credential')
+    
+    try:
+        # Sign the report with XLS-70 credentials
+        result = xls70_service.sign_report_with_credential(report, request.user)
+        
+        if result.get('success'):
+            messages.success(request, f"Report signed with XLS-70 credentials! Transaction: {result['transaction_hash']}")
+        else:
+            messages.error(request, f"Signing failed: {result.get('error')}")
+        
+    except Exception as e:
+        messages.error(request, f"Signing failed: {str(e)}")
+    
+    return redirect('report_detail', pk=pk)
+
+@login_required
+def verify_credential_signature(request, pk):
+    """Verify a report's XLS-70 credential signature"""
+    report = get_object_or_404(Report, pk=pk)
+    
+    if not report.signature_tx_hash:
+        messages.error(request, "This report has not been digitally signed.")
+        return redirect('report_detail', pk=pk)
+    
+    try:
+        verification_result = xls70_service.verify_credential_signature(report)
+        
+        if verification_result.get('verified'):
+            messages.success(request, "XLS-70 credential signature verified successfully!")
+        else:
+            messages.error(request, f"Signature verification failed: {verification_result.get('error')}")
+        
+        context = {
+            'report': report,
+            'verification_result': verification_result,
+        }
+        return render(request, 'wallet/verify_credential_signature.html', context)
+        
+    except Exception as e:
+        messages.error(request, f"Error verifying signature: {str(e)}")
+        return redirect('report_detail', pk=pk)
+
+@login_required
+def credential_status_api(request):
+    """API endpoint to get user's credential status"""
+    try:
+        status = xls70_service.get_credential_status(request.user)
+        return JsonResponse(status)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 
 # Create your views here.
