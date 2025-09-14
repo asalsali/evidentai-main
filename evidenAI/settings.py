@@ -129,3 +129,13 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Authentication settings
+LOGIN_URL = '/login/'
+LOGIN_REDIRECT_URL = '/dashboard/'
+LOGOUT_REDIRECT_URL = '/'
+
+# XRPL Configuration
+XRPL_NETWORK_URL = "wss://s.devnet.rippletest.net:51233"  # Devnet for testing
+# Generate with: from cryptography.fernet import Fernet; print(Fernet.generate_key())
+XRPL_ENCRYPTION_KEY = b'PicajqGCEiMuXuKKnvs1LVteuC7JFZwqcbDlwV0v-jI='

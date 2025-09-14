@@ -5,3 +5,5 @@ python-dotenv
 opencv-python
 moviepy
 reportlab
+xrpl-py
+cryptography

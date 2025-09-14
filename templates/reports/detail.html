@@ -107,6 +107,72 @@
       </div>
     </div>
     {% endif %}
+    
+    <!-- Digital Signature Section -->
+    <div class="border-t border-gray-700 pt-4 mt-4">
+      <h3 class="text-sm font-medium mb-3">🔐 Digital Signature</h3>
+      {% if not report.signed_by %}
+        <div class="space-y-2">
+          {% if not user.officer_wallet %}
+            <div class="p-3 bg-yellow-900/20 border border-yellow-600/30 rounded-lg">
+              <div class="flex items-center gap-2 mb-2">
+                <span class="text-yellow-300">⚠️</span>
+                <span class="text-sm text-yellow-300 font-medium">Wallet Setup Required</span>
+              </div>
+              <p class="text-sm text-yellow-300 mb-3">You need to set up your digital signature wallet before you can sign reports.</p>
+              <a href="{% url 'setup_wallet' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded text-sm font-medium transition-colors">
+                🔑 Setup My Digital Wallet
+              </a>
+            </div>
+          {% else %}
+            <div class="p-3 bg-blue-900/20 border border-blue-600/30 rounded-lg">
+              <div class="flex items-center gap-2 mb-2">
+                <span class="text-blue-300">📝</span>
+                <span class="text-sm text-blue-300 font-medium">Ready to Sign</span>
+              </div>
+              <p class="text-sm text-blue-300 mb-3">This report is ready for your digital signature. Signing creates a permanent, tamper-proof record.</p>
+              <a href="{% url 'sign_report' report.id %}" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium transition-colors">
+                ✍️ Sign This Report
+              </a>
+            </div>
+          {% endif %}
+          <div class="text-xs text-gray-400 mt-2">
+            <strong>What happens when you sign:</strong> Your signature is permanently recorded on the blockchain, making this report tamper-proof and court-ready.
+          </div>
+        </div>
+      {% else %}
+        <div class="space-y-2">
+          <div class="p-3 bg-green-900/20 border border-green-600/30 rounded-lg">
+            <div class="flex items-center gap-2 mb-3">
+              <span class="text-green-300 text-lg">✅</span>
+              <span class="text-green-300 font-medium">Report Digitally Signed</span>
+            </div>
+            <div class="text-sm space-y-2">
+              <div class="flex justify-between">
+                <span class="text-gray-400">Signed by:</span>
+                <span class="text-white">{{ report.signed_by.username }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-400">Signed on:</span>
+                <span class="text-white">{{ report.signed_at|date:"M d, Y at H:i" }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-400">Signature ID:</span>
+                <code class="text-xs text-green-300">{{ report.signature_tx_hash|truncatechars:16 }}...</code>
+              </div>
+            </div>
+            <div class="mt-3 flex gap-2">
+              <a href="{% url 'verify_signature' report.id %}" class="inline-flex items-center gap-1 px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs font-medium transition-colors">
+                🔍 Verify Signature
+              </a>
+              <a href="https://devnet.xrpl.org/transactions/{{ report.signature_tx_hash }}" target="_blank" class="inline-flex items-center gap-1 px-3 py-1 bg-gray-600 hover:bg-gray-700 text-white rounded text-xs font-medium transition-colors">
+                🔗 View on Blockchain
+              </a>
+            </div>
+          </div>
+        </div>
+      {% endif %}
+    </div>
   </div>
 </div>
 

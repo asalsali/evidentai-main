@@ -1,5 +1,9 @@
 <nav class="space-y-2 text-sm">
-  <a href="/" class="block px-3 py-2 rounded hover:bg-gray-800 flex items-center gap-2">
+  <a href="{% url 'home' %}" class="block px-3 py-2 rounded hover:bg-gray-800 flex items-center gap-2">
+    <span>🏠</span>
+    <span>Home</span>
+  </a>
+  <a href="{% url 'dashboard' %}" class="block px-3 py-2 rounded hover:bg-gray-800 flex items-center gap-2">
     <span>🚔</span>
     <span>Evidence Center</span>
   </a>
@@ -20,6 +24,29 @@
     <span>✅</span>
     <span>Completed Reports</span>
   </a>
+  
+  {% if user.is_authenticated %}
+  <div class="mt-6 text-xs uppercase muted">Digital Signatures</div>
+  {% if user.officer_wallet %}
+  <a href="{% url 'wallet_dashboard' %}" class="block px-3 py-2 rounded hover:bg-gray-800 flex items-center gap-2">
+    <span>🔐</span>
+    <span>My Wallet</span>
+  </a>
+  {% else %}
+  <a href="{% url 'setup_wallet' %}" class="block px-3 py-2 rounded hover:bg-gray-800 flex items-center gap-2">
+    <span>🔑</span>
+    <span>Setup Wallet</span>
+  </a>
+  {% endif %}
+  {% endif %}
+  
+  {% if user.is_authenticated %}
+  <div class="mt-8 pt-4 border-t border-gray-700">
+    <a href="{% url 'logout' %}" class="flex items-center gap-3 px-3 py-2 text-red-400 hover:bg-red-900/20 rounded">
+      🚪 <span>Logout</span>
+    </a>
+  </div>
+  {% endif %}
 </nav>
 
 

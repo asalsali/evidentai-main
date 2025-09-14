@@ -1,0 +1,366 @@
+{% extends 'base.html' %}
+
+{% block title %}My Digital Signature Wallet{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <!-- Clean Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <h2 class="text-white mb-1">🔐 Digital Signature Wallet</h2>
+                    <p class="text-muted mb-0">Secure document signing for evidence reports</p>
+                </div>
+                <div>
+                    {% if officer_wallet.is_active %}
+                        <span class="badge bg-success fs-6 px-3 py-2">
+                            <i class="fas fa-check-circle me-1"></i>Active
+                        </span>
+                    {% else %}
+                        <span class="badge bg-warning fs-6 px-3 py-2">
+                            <i class="fas fa-exclamation-triangle me-1"></i>Inactive
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="row mb-4">
+        <!-- Wallet Information -->
+        <div class="col-lg-4 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-wallet me-2"></i>
+                        <h5 class="mb-0">Wallet Information</h5>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Wallet Address</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control font-monospace" 
+                                   value="{{ officer_wallet.wallet_address|truncatechars:24 }}..." 
+                                   readonly id="walletAddress">
+                            <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard('walletAddress')">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                        <input type="hidden" id="walletAddress" value="{{ officer_wallet.wallet_address }}">
+                    </div>
+                    
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <div class="text-center p-3 bg-light rounded">
+                                <div class="fw-bold text-primary">{{ officer_wallet.created_at|date:"M d" }}</div>
+                                <div class="text-muted small">Created</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center p-3 bg-light rounded">
+                                <div class="fw-bold text-success">Active</div>
+                                <div class="text-muted small">Status</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <a href="https://devnet.xrpl.org/accounts/{{ officer_wallet.wallet_address }}" 
+                           target="_blank" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-external-link-alt me-2"></i>View on XRPL Explorer
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Stats -->
+        <div class="col-lg-8 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-chart-line me-2"></i>
+                        <h5 class="mb-0">Activity Summary</h5>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <div class="text-center p-3 bg-light rounded">
+                                <div class="fs-3 fw-bold text-primary">{{ signed_reports.count }}</div>
+                                <div class="text-muted small">Reports Signed</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-3 bg-light rounded">
+                                <div class="fs-3 fw-bold text-success">{{ balance|floatformat:2 }}</div>
+                                <div class="text-muted small">XRP Balance</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-3 bg-light rounded">
+                                <div class="fs-3 fw-bold text-info">100%</div>
+                                <div class="text-muted small">Security</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-3 bg-light rounded">
+                                <div class="fs-3 fw-bold text-warning">{{ officer_wallet.created_at|date:"d" }}</div>
+                                <div class="text-muted small">Days Active</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-bolt me-2 text-warning"></i>
+                        <h5 class="mb-0">Quick Actions</h5>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <a href="{% url 'reports_completed' %}" class="btn btn-success w-100 py-3">
+                                <div class="d-flex align-items-center justify-content-center">
+                                    <i class="fas fa-signature me-2 fs-4"></i>
+                                    <div class="text-start">
+                                        <div class="fw-bold">Sign Reports</div>
+                                        <small class="opacity-75">Sign completed evidence reports</small>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <a href="{% url 'reports_all' %}" class="btn btn-primary w-100 py-3">
+                                <div class="d-flex align-items-center justify-content-center">
+                                    <i class="fas fa-file-alt me-2 fs-4"></i>
+                                    <div class="text-start">
+                                        <div class="fw-bold">View Reports</div>
+                                        <small class="opacity-75">Browse all evidence reports</small>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary w-100 py-3">
+                                <div class="d-flex align-items-center justify-content-center">
+                                    <i class="fas fa-home me-2 fs-4"></i>
+                                    <div class="text-start">
+                                        <div class="fw-bold">Main Dashboard</div>
+                                        <small class="opacity-75">Back to evidence center</small>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Signed Reports -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-file-signature me-2"></i>
+                        <h5 class="mb-0">My Signed Reports</h5>
+                    </div>
+                    <span class="badge bg-light text-dark">{{ signed_reports.count }} Total</span>
+                </div>
+                <div class="card-body">
+                    {% if signed_reports %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Report ID</th>
+                                        <th>Incident Type</th>
+                                        <th>Signed At</th>
+                                        <th>Transaction Hash</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for report in signed_reports %}
+                                        <tr>
+                                            <td>
+                                                <span class="badge bg-primary">#{{ report.id }}</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">
+                                                    {{ report.get_incident_type_display|default:"Not specified" }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <div class="text-muted small">{{ report.signed_at|date:"M d, Y" }}</div>
+                                                <div class="fw-medium">{{ report.signed_at|date:"H:i" }}</div>
+                                            </td>
+                                            <td>
+                                                <div class="input-group input-group-sm">
+                                                    <input type="text" class="form-control font-monospace small" 
+                                                           value="{{ report.signature_tx_hash|truncatechars:16 }}..." 
+                                                           readonly id="txHash{{ report.id }}">
+                                                    <button class="btn btn-outline-secondary" type="button" 
+                                                            onclick="copyToClipboard('txHash{{ report.id }}')">
+                                                        <i class="fas fa-copy"></i>
+                                                    </button>
+                                                </div>
+                                                <input type="hidden" id="txHash{{ report.id }}" value="{{ report.signature_tx_hash }}">
+                                            </td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <a href="{% url 'report_detail' report.id %}" 
+                                                       class="btn btn-sm btn-outline-primary">
+                                                        <i class="fas fa-eye"></i> View
+                                                    </a>
+                                                    <a href="{% url 'verify_signature' report.id %}" 
+                                                       class="btn btn-sm btn-outline-success">
+                                                        <i class="fas fa-shield-alt"></i> Verify
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <div class="mb-3">
+                                <i class="fas fa-file-signature text-muted" style="font-size: 4rem;"></i>
+                            </div>
+                            <h5 class="text-muted">No Signed Reports Yet</h5>
+                            <p class="text-muted">Complete reports and sign them to create tamper-proof evidence records.</p>
+                            <a href="{% url 'reports_completed' %}" class="btn btn-primary">
+                                <i class="fas fa-signature me-2"></i>View Completed Reports
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Information Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-secondary text-white">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <h5 class="mb-0">About Digital Signatures</h5>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-lg-6 mb-4">
+                            <div class="h-100 p-3 border rounded">
+                                <h6 class="text-primary mb-3">
+                                    <i class="fas fa-shield-alt me-2"></i>Security Benefits
+                                </h6>
+                                <ul class="list-unstyled">
+                                    <li class="mb-2">
+                                        <span class="badge bg-success me-2">✓</span>
+                                        Cryptographic proof of document integrity
+                                    </li>
+                                    <li class="mb-2">
+                                        <span class="badge bg-success me-2">✓</span>
+                                        Immutable timestamp on blockchain
+                                    </li>
+                                    <li class="mb-2">
+                                        <span class="badge bg-success me-2">✓</span>
+                                        Tamper-evident signatures
+                                    </li>
+                                    <li class="mb-2">
+                                        <span class="badge bg-success me-2">✓</span>
+                                        Public verification capability
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="col-lg-6 mb-4">
+                            <div class="h-100 p-3 border rounded">
+                                <h6 class="text-success mb-3">
+                                    <i class="fas fa-gavel me-2"></i>Legal Benefits
+                                </h6>
+                                <ul class="list-unstyled">
+                                    <li class="mb-2">
+                                        <span class="badge bg-primary me-2">⚖️</span>
+                                        Court-admissible evidence
+                                    </li>
+                                    <li class="mb-2">
+                                        <span class="badge bg-primary me-2">⚖️</span>
+                                        Non-repudiation of signatures
+                                    </li>
+                                    <li class="mb-2">
+                                        <span class="badge bg-primary me-2">⚖️</span>
+                                        Audit trail for compliance
+                                    </li>
+                                    <li class="mb-2">
+                                        <span class="badge bg-primary me-2">⚖️</span>
+                                        Professional credibility
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info border-0 shadow-sm">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-lightbulb me-3 fs-4"></i>
+                            <div>
+                                <strong>Simple Process:</strong> Just click "Sign Report" on any completed evidence report. 
+                                Your signature is automatically recorded and can be verified by anyone.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Copy Functionality -->
+<script>
+function copyToClipboard(elementId) {
+    const element = document.getElementById(elementId);
+    element.select();
+    element.setSelectionRange(0, 99999);
+    
+    try {
+        document.execCommand('copy');
+        
+        // Show success feedback
+        const button = element.nextElementSibling;
+        const originalText = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-check me-1"></i>Copied!';
+        button.classList.remove('btn-outline-secondary');
+        button.classList.add('btn-success');
+        
+        setTimeout(() => {
+            button.innerHTML = originalText;
+            button.classList.remove('btn-success');
+            button.classList.add('btn-outline-secondary');
+        }, 2000);
+        
+    } catch (err) {
+        alert('Failed to copy. Please try again.');
+    }
+}
+</script>
+{% endblock %}

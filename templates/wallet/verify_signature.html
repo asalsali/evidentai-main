@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+
+{% block title %}Verify Signature - Report #{{ report.id }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="mb-0">🔍 Signature Verification - Report #{{ report.id }}</h3>
+                </div>
+                <div class="card-body">
+                    
+                    <!-- Report Summary -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6>📋 Report Summary</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>Incident Type:</strong> {{ report.get_incident_type_display|default:"Not specified" }}</p>
+                                    <p><strong>Officer Badge:</strong> {{ report.officer_badge|default:"Not specified" }}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p><strong>Incident Date:</strong> {{ report.incident_date|date:"M d, Y"|default:"Not specified" }}</p>
+                                    <p><strong>Status:</strong> {{ report.status|title }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Signature Information -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6>🔐 Signature Information</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>Signed By:</strong> {{ report.signed_by.username|default:"Unknown" }}</p>
+                                    <p><strong>Signed At:</strong> {{ report.signed_at|date:"M d, Y H:i"|default:"Unknown" }}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p><strong>Transaction Hash:</strong></p>
+                                    <code class="d-block p-2 bg-light">{{ report.signature_tx_hash }}</code>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Verification Results -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6>✅ Verification Results</h6>
+                        </div>
+                        <div class="card-body">
+                            {% if verification_result.verified %}
+                                <div class="alert alert-success">
+                                    <h5>✅ Signature Verified Successfully!</h5>
+                                    <p class="mb-0">This document's signature has been verified on the XRPL blockchain.</p>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6>🔍 Verification Details</h6>
+                                        <ul class="list-unstyled">
+                                            <li><strong>Status:</strong> <span class="badge bg-success">Verified</span></li>
+                                            <li><strong>Verified At:</strong> {{ verification_result.verified_at|date:"M d, Y H:i" }}</li>
+                                            <li><strong>Network:</strong> XRPL Devnet</li>
+                                        </ul>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6>🔗 Blockchain Links</h6>
+                                        <a href="https://devnet.xrpl.org/transactions/{{ report.signature_tx_hash }}" 
+                                           target="_blank" class="btn btn-outline-primary btn-sm">
+                                            View Transaction on XRPL Explorer
+                                        </a>
+                                    </div>
+                                </div>
+                                
+                            {% else %}
+                                <div class="alert alert-danger">
+                                    <h5>❌ Signature Verification Failed</h5>
+                                    <p class="mb-0">Error: {{ verification_result.error }}</p>
+                                </div>
+                                
+                                <div class="alert alert-warning">
+                                    <h6>Possible Causes:</h6>
+                                    <ul class="mb-0">
+                                        <li>Transaction not yet confirmed on blockchain</li>
+                                        <li>Network connectivity issues</li>
+                                        <li>Invalid or corrupted signature data</li>
+                                        <li>Document content has been modified</li>
+                                    </ul>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Document Hash -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6>🔢 Document Integrity</h6>
+                        </div>
+                        <div class="card-body">
+                            <p><strong>Document Hash:</strong></p>
+                            <code class="d-block p-2 bg-light">{{ report.document_hash }}</code>
+                            <small class="text-muted">
+                                This SHA-256 hash uniquely identifies the document content. 
+                                Any modification to the document will change this hash.
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <!-- Actions -->
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'report_detail' report.id %}" class="btn btn-outline-secondary">
+                            Back to Report
+                        </a>
+                        {% if verification_result.verified %}
+                            <a href="{% url 'report_pdf' report.id %}" class="btn btn-primary">
+                                Download Signed PDF
+                            </a>
+                        {% endif %}
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

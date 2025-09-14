@@ -1,10 +1,14 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.contrib import messages
 from django.http import JsonResponse, Http404, HttpResponse
 from django.template.loader import render_to_string
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth import authenticate, login, logout
+from django.contrib import messages
 from .forms import VideoUploadForm
-from .models import Report
+from .models import Report, OfficerWallet
+from .xrpl_service import xrpl_service
 import threading
 from reportlab.lib.pagesizes import letter, A4
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
@@ -15,6 +19,46 @@ from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_JUSTIFY
 from io import BytesIO
 
 
+def home(request):
+    """Home page - shows login prompt for unauthenticated users, dashboard link for authenticated users"""
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+    return render(request, 'home.html')
+
+
+def custom_login(request):
+    """Custom login view to handle authentication"""
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+    
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        
+        print(f"Login attempt: username='{username}', password length={len(password) if password else 0}")
+        
+        user = authenticate(request, username=username, password=password)
+        if user is not None:
+            login(request, user)
+            print(f"Login successful for user: {user.username}")
+            # Redirect to next page or dashboard
+            next_url = request.GET.get('next', 'dashboard')
+            return redirect(next_url)
+        else:
+            print(f"Login failed for username: {username}")
+            messages.error(request, 'Invalid username or password. Please try again.')
+    
+    return render(request, 'auth/login.html')
+
+
+def custom_logout(request):
+    """Custom logout view to handle logout"""
+    logout(request)
+    messages.success(request, 'You have been successfully logged out.')
+    return redirect('home')
+
+
+@login_required
 def dashboard(request):
     reports = Report.objects.order_by('-created_at')[:10]
     form = VideoUploadForm()
@@ -27,6 +71,7 @@ def _process_report_background(report_id: int):
     manager.process_report_sync(report_id)
 
 
+@login_required
 def upload_video(request):
     if request.method == 'POST':
         form = VideoUploadForm(request.POST, request.FILES)
@@ -46,21 +91,25 @@ def upload_video(request):
     return render(request, 'dashboard.html', {"form": form})
 
 
+@login_required
 def reports_all(request):
     reports = Report.objects.order_by('-created_at')
     return render(request, 'reports/list.html', {"title": "All Reports", "reports": reports})
 
 
+@login_required
 def reports_in_progress(request):
     reports = Report.objects.exclude(status__in=['completed', 'failed']).order_by('-created_at')
     return render(request, 'reports/list.html', {"title": "In Progress", "reports": reports})
 
 
+@login_required
 def reports_completed(request):
     reports = Report.objects.filter(status='completed').order_by('-created_at')
     return render(request, 'reports/list.html', {"title": "Completed", "reports": reports})
 
 
+@login_required
 def report_detail(request, pk: int):
     try:
         report = Report.objects.get(pk=pk)
@@ -69,6 +118,7 @@ def report_detail(request, pk: int):
     return render(request, 'reports/detail.html', {"report": report})
 
 
+@login_required
 def report_status_json(request, pk: int):
     try:
         report = Report.objects.get(pk=pk)
@@ -82,6 +132,7 @@ def report_status_json(request, pk: int):
     })
 
 
+@login_required
 def professional_report(request, pk: int):
     """Display a professional, print-ready report for law enforcement use."""
     try:
@@ -95,6 +146,7 @@ def professional_report(request, pk: int):
     return render(request, 'reports/professional_report.html', context)
 
 
+@login_required
 def update_report(request, pk: int):
     """Update report information via AJAX."""
     if request.method != 'POST':
@@ -126,6 +178,7 @@ def update_report(request, pk: int):
     })
 
 
+@login_required
 def report_pdf(request, pk: int):
     """Generate and download a PDF version of the professional report."""
     try:
@@ -375,5 +428,136 @@ def report_pdf(request, pk: int):
     response['Content-Disposition'] = f'attachment; filename="evidence_report_case_{report.id}.pdf"'
     
     return response
+
+
+# XRPL Digital Signature Views
+
+@login_required
+def setup_wallet(request):
+    """One-click XRPL wallet setup for officers"""
+    try:
+        # Check if user already has a wallet
+        if hasattr(request.user, 'officer_wallet'):
+            messages.info(request, "You already have an XRPL wallet set up.")
+            return redirect('dashboard')
+        
+        # Create wallet
+        officer_wallet = xrpl_service.create_wallet_for_user(request.user)
+        messages.success(request, f"XRPL wallet created successfully! Address: {officer_wallet.wallet_address}")
+        
+    except Exception as e:
+        messages.error(request, f"Failed to create wallet: {str(e)}")
+    
+    return redirect('dashboard')
+
+
+@login_required
+def wallet_dashboard(request):
+    """Display user's XRPL wallet information"""
+    try:
+        officer_wallet = xrpl_service.get_wallet_for_user(request.user)
+        
+        if not officer_wallet:
+            messages.info(request, "You need to set up an XRPL wallet first.")
+            return redirect('setup_wallet')
+        
+        # Get wallet balance
+        balance = xrpl_service.get_wallet_balance(officer_wallet)
+        
+        # Get signed reports
+        signed_reports = Report.objects.filter(signed_by=request.user).order_by('-signed_at')
+        
+        context = {
+            'officer_wallet': officer_wallet,
+            'balance': balance,
+            'signed_reports': signed_reports,
+        }
+        return render(request, 'wallet/dashboard.html', context)
+        
+    except Exception as e:
+        messages.error(request, f"Error loading wallet dashboard: {str(e)}")
+        return redirect('dashboard')
+
+
+@login_required
+def sign_report(request, pk):
+    """Sign a report with XRPL digital signature"""
+    report = get_object_or_404(Report, pk=pk)
+    
+    # Check if already signed
+    if report.signed_by:
+        messages.warning(request, "This report is already signed.")
+        return redirect('report_detail', pk=pk)
+    
+    # Check if user has wallet
+    if not hasattr(request.user, 'officer_wallet'):
+        messages.error(request, "You need to set up an XRPL wallet first.")
+        return redirect('setup_wallet')
+    
+    try:
+        # Sign the report
+        tx_hash = xrpl_service.sign_report(report, request.user)
+        messages.success(request, f"Report signed successfully! Transaction: {tx_hash}")
+        
+    except Exception as e:
+        messages.error(request, f"Signing failed: {str(e)}")
+    
+    return redirect('report_detail', pk=pk)
+
+
+@login_required
+def verify_signature(request, pk):
+    """Verify a report's digital signature"""
+    report = get_object_or_404(Report, pk=pk)
+    
+    if not report.signature_tx_hash:
+        messages.error(request, "This report has not been digitally signed.")
+        return redirect('report_detail', pk=pk)
+    
+    try:
+        verification_result = xrpl_service.verify_signature(report)
+        
+        if verification_result.get('verified'):
+            messages.success(request, "Digital signature verified successfully!")
+        else:
+            messages.error(request, f"Signature verification failed: {verification_result.get('error')}")
+        
+        context = {
+            'report': report,
+            'verification_result': verification_result,
+        }
+        return render(request, 'wallet/verify_signature.html', context)
+        
+    except Exception as e:
+        messages.error(request, f"Error verifying signature: {str(e)}")
+        return redirect('report_detail', pk=pk)
+
+
+@login_required
+def signature_status_api(request, pk):
+    """API endpoint to get signature status"""
+    report = get_object_or_404(Report, pk=pk)
+    
+    try:
+        if report.signature_tx_hash:
+            verification_result = xrpl_service.verify_signature(report)
+            return JsonResponse({
+                'signed': True,
+                'verified': verification_result.get('verified', False),
+                'tx_hash': report.signature_tx_hash,
+                'signed_by': report.signed_by.username if report.signed_by else None,
+                'signed_at': report.signed_at.isoformat() if report.signed_at else None,
+                'verification_result': verification_result
+            })
+        else:
+            return JsonResponse({
+                'signed': False,
+                'verified': False
+            })
+    except Exception as e:
+        return JsonResponse({
+            'error': str(e)
+        }, status=500)
+
 
 # Create your views here.

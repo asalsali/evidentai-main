@@ -1,4 +1,35 @@
 from django.db import models
+from django.contrib.auth.models import User
+from cryptography.fernet import Fernet
+import hashlib
+import json
+
+
+class OfficerWallet(models.Model):
+    """Simple XRPL wallet tied to each officer"""
+    user = models.OneToOneField(
+        User, 
+        on_delete=models.CASCADE, 
+        related_name='officer_wallet'
+    )
+    
+    # Wallet identification
+    wallet_address = models.CharField(max_length=50, unique=True)
+    encrypted_secret = models.TextField()  # Encrypted private key
+    
+    # Status tracking
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_used = models.DateTimeField(null=True, blank=True)
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.wallet_address}"
+    
+    def get_decrypted_secret(self):
+        """Safely decrypt the wallet secret"""
+        from django.conf import settings
+        fernet = Fernet(settings.XRPL_ENCRYPTION_KEY)
+        return fernet.decrypt(self.encrypted_secret.encode()).decode()
 
 
 class Report(models.Model):
@@ -36,6 +67,19 @@ class Report(models.Model):
     image_findings_json = models.JSONField(blank=True, null=True)
     summarized_report = models.TextField(blank=True, default='')
 
+    # XRPL Digital Signature fields
+    document_hash = models.CharField(max_length=64, blank=True, help_text="SHA-256 hash of the document content")
+    signed_by = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='signed_reports',
+        help_text="Officer who digitally signed this report"
+    )
+    signed_at = models.DateTimeField(null=True, blank=True, help_text="When the document was digitally signed")
+    signature_tx_hash = models.CharField(max_length=64, blank=True, help_text="XRPL transaction hash of the signature")
+
     def __str__(self) -> str:
         return f"Case #{self.id} - {self.get_incident_type_display() or 'Unknown'} - {self.status}"
 
@@ -51,6 +95,19 @@ class Report(models.Model):
             'failed': 0,
         }
         return mapping.get(self.status, 0)
+
+    def generate_hash(self):
+        """Generate hash of report content for signing"""
+        content = {
+            'id': self.id,
+            'incident_type': self.incident_type,
+            'officer_badge': self.officer_badge,
+            'transcript': self.transcript_text,
+            'summary': self.summarized_report,
+            'created': self.created_at.isoformat(),
+        }
+        content_str = json.dumps(content, sort_keys=True)
+        return hashlib.sha256(content_str.encode()).hexdigest()
 
 
 # Create your models here.
